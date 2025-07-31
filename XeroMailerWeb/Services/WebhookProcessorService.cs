@@ -40,7 +40,6 @@ namespace XeroMailerWeb.Services
         private readonly IConfiguration _config;
         private static readonly string WebhookLogPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "app_XeroWebhook.log");
         private readonly TimeSpan _delay = TimeSpan.FromSeconds(2); // Adjust as needed
-        private readonly IServiceProvider _serviceProvider;
 
         public WebhookProcessorService(WebhookQueueService queueService, XeroService xeroService, ILogger<WebhookProcessorService> logger, IConfiguration config)
         {

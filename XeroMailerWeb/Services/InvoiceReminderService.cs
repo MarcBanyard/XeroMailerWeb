@@ -128,17 +128,17 @@ public class InvoiceReminderService
 
             // Fetch organisation details for the email footer
             var orgDetails = await xeroService.GetOrganisationDetailsAsync(tenantId);
-            string orgName = orgDetails?.Name ?? orgDetails?.LegalName;
+            string orgName = orgDetails?.Name ?? orgDetails?.LegalName ?? "";
 //            string orgAddress = string.Join(", ", new[] { orgDetails?.AddressLine1, orgDetails?.AddressLine2, orgDetails?.City, orgDetails?.Region, orgDetails?.PostalCode, orgDetails?.Country }.Where(s => !string.IsNullOrWhiteSpace(s)));
-            string orgPhone = orgDetails?.PhoneNumber;
-            string orgEmail = orgDetails?.Email;
-            string orgWebsite = orgDetails?.Website;
-            string orgAddressLine1 = (orgDetails?.AddressLine1).Replace(",", "<br/>").Trim();
-            string orgAddressLine2 = (orgDetails?.AddressLine2).Replace(",", "<br/>").Trim();
-            string orgCity = (orgDetails?.City).Replace(",", "<br/>").Trim();
-            string orgRegion = (orgDetails?.Region).Replace(",", "<br/>").Trim();
-            string orgPostalCode = (orgDetails?.PostalCode).Replace(",", "<br/>").Trim();
-            string orgCountry = (orgDetails?.Country).Replace(",", "<br/>").Trim();
+            string orgPhone = orgDetails?.PhoneNumber ?? "";
+            string orgEmail = orgDetails?.Email ?? "";
+            string orgWebsite = orgDetails?.Website ?? "";
+            string orgAddressLine1 = (orgDetails?.AddressLine1 ?? "").Replace(",", "<br/>").Trim();
+            string orgAddressLine2 = (orgDetails?.AddressLine2 ?? "").Replace(",", "<br/>").Trim();
+            string orgCity = (orgDetails?.City ?? "").Replace(",", "<br/>").Trim();
+            string orgRegion = (orgDetails?.Region ?? "").Replace(",", "<br/>").Trim();
+            string orgPostalCode = (orgDetails?.PostalCode ?? "").Replace(",", "<br/>").Trim();
+            string orgCountry = (orgDetails?.Country ?? "").Replace(",", "<br/>").Trim();
 
             // 3. Group by customer, filter overdue
             var remindersEnabled = _config.GetValue<bool>("XeroMailerWeb:InvoiceReminders", true);
@@ -155,7 +155,7 @@ public class InvoiceReminderService
                 var firstInvoice = group.First();
                 var invoiceId = firstInvoice.GetProperty("InvoiceID").GetString();
                 // Fetch full invoice details to get up-to-date contact info
-                var invoiceDetails = await xeroService.GetInvoiceDetailsAsync(tenantId, invoiceId);
+                var invoiceDetails = await xeroService.GetInvoiceDetailsAsync(tenantId, invoiceId ?? "");
                 if (invoiceDetails == null)
                 {
                     LogToFile($"Skipping group (could not fetch invoice details for {invoiceId}).");
@@ -177,7 +177,7 @@ public class InvoiceReminderService
                 // Filter overdue invoices for this customer
                 var overdueInvoices = group.Where(inv =>
                 {
-                    var dueDate = inv.TryGetProperty("DueDate", out var dueProp) ? ParseXeroDate(dueProp.GetString()) : (DateTime?)null;
+                    var dueDate = inv.TryGetProperty("DueDate", out var dueProp) ? ParseXeroDate(dueProp.GetString() ?? "") : (DateTime?)null;
                     if (dueDate == null) return false;
                     var daysOverdue = (now - dueDate.Value.Date).Days;
                     return daysOverdue >= remindAfterDays;
@@ -189,10 +189,10 @@ public class InvoiceReminderService
                 foreach (var inv in overdueInvoices)
                 {
                     var invId = inv.GetProperty("InvoiceID").GetString();
-                    var dueDate = ParseXeroDate(inv.GetProperty("DueDate").GetString());
+                    var dueDate = ParseXeroDate(inv.GetProperty("DueDate").GetString() ?? "");
                     var daysOverdue = (now - dueDate.Date).Days;
                     if (daysOverdue < remindAfterDays) continue;
-                    var lastSent = tempXeroInvoiceReminderState.TryGetValue(invId, out var last) ? last : (DateTime?)null;
+                    var lastSent = tempXeroInvoiceReminderState.TryGetValue(invId ?? "", out var last) ? last : (DateTime?)null;
                     var shouldSend = false;
                     if (lastSent == null)
                     {
@@ -208,13 +208,13 @@ public class InvoiceReminderService
                     if (shouldSend)
                     {
                         invoicesToRemind.Add(inv);
-                        XeroInvoiceReminderState[invId] = now;
+                        XeroInvoiceReminderState[invId ?? ""] = now;
                         LogToFile($"Will send reminder for invoice {invId} (overdue {daysOverdue} days, last sent: {(lastSent?.ToString("yyyy-MM-dd") ?? "never")})");
                     }
                     else
                     {
                         // Not sending, but keep the old date
-                        XeroInvoiceReminderState[invId] = lastSent ?? now;
+                        XeroInvoiceReminderState[invId ?? ""] = lastSent ?? now;
                         LogToFile($"Skipping reminder for invoice {invId} (overdue {daysOverdue} days, last sent: {(lastSent?.ToString("yyyy-MM-dd") ?? "never")})");
                     }
                 }
@@ -235,11 +235,11 @@ public class InvoiceReminderService
                 {
                     var invoiceNumber = inv.GetProperty("InvoiceNumber").GetString();
                     var reference = inv.GetProperty("Reference").GetString();
-                    var dueDate = ParseXeroDate(inv.GetProperty("DueDate").GetString()).ToString("yyyy-MM-dd");
+                    var dueDate = ParseXeroDate(inv.GetProperty("DueDate").GetString() ?? "").ToString("yyyy-MM-dd");
                     var amountDue = inv.GetProperty("AmountDue").GetDecimal();
                     var formattedAmount = string.Format("{0}{1:N2}", currencySymbol, amountDue);
                     var invId = inv.GetProperty("InvoiceID").GetString();
-                    var onlineUrl = await GetOnlineInvoiceUrlAsync(accessToken, tenantId, invId);
+                    var onlineUrl = await GetOnlineInvoiceUrlAsync(accessToken, tenantId, invId ?? "");
                     sb.AppendLine($"<tr>" +
                         $"<td><a href='{onlineUrl}' target='_blank' style='color:#028DDE;text-decoration:none;'>{invoiceNumber}</a></td>" +
                         $"<td>{reference}</td>" +

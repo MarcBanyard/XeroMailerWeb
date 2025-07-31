@@ -71,9 +71,9 @@ public class XeroService
             Content = new FormUrlEncodedContent(new[]
             {
                 new KeyValuePair<string, string>("grant_type", "refresh_token"),
-                new KeyValuePair<string, string>("refresh_token", refreshToken),
-                new KeyValuePair<string, string>("client_id", clientId),
-                new KeyValuePair<string, string>("client_secret", clientSecret)
+                new KeyValuePair<string, string>("refresh_token", refreshToken ?? ""),
+                new KeyValuePair<string, string>("client_id", clientId ?? ""),
+                new KeyValuePair<string, string>("client_secret", clientSecret ?? "")
             })
         };
         var tokenResponse = await client.SendAsync(tokenRequest);
@@ -252,9 +252,9 @@ public class XeroService
             Content = new FormUrlEncodedContent(new[]
             {
                 new KeyValuePair<string, string>("grant_type", "refresh_token"),
-                new KeyValuePair<string, string>("refresh_token", refreshToken),
-                new KeyValuePair<string, string>("client_id", clientId),
-                new KeyValuePair<string, string>("client_secret", clientSecret)
+                new KeyValuePair<string, string>("refresh_token", refreshToken ?? ""),
+                new KeyValuePair<string, string>("client_id", clientId ?? ""),
+                new KeyValuePair<string, string>("client_secret", clientSecret ?? "")
             })
         };
         var tokenResponse = await client.SendAsync(tokenRequest);
@@ -746,17 +746,17 @@ public class XeroService
             
             // Fetch organisation details for the email footer
             var orgDetails = await GetOrganisationDetailsAsync(tenantId);
-            string orgName = orgDetails?.Name ?? orgDetails?.LegalName;
+            string orgName = orgDetails?.Name ?? orgDetails?.LegalName ?? "";
             string orgAddress = string.Join(", ", new[] { orgDetails?.AddressLine1, orgDetails?.AddressLine2, orgDetails?.City, orgDetails?.Region, orgDetails?.PostalCode, orgDetails?.Country }.Where(s => !string.IsNullOrWhiteSpace(s)));
-            string orgPhone = orgDetails?.PhoneNumber;
-            string orgEmail = orgDetails?.Email;
-            string orgWebsite = orgDetails?.Website;
-            string orgAddressLine1 = orgDetails?.AddressLine1;
-            string orgAddressLine2 = orgDetails?.AddressLine2;
-            string orgCity = orgDetails?.City;
-            string orgRegion = orgDetails?.Region;
-            string orgPostalCode = orgDetails?.PostalCode;
-            string orgCountry = orgDetails?.Country;
+            string orgPhone = orgDetails?.PhoneNumber ?? "";
+            string orgEmail = orgDetails?.Email ?? "";
+            string orgWebsite = orgDetails?.Website ?? "";
+            string orgAddressLine1 = orgDetails?.AddressLine1 ?? "";
+            string orgAddressLine2 = orgDetails?.AddressLine2 ?? "";
+            string orgCity = orgDetails?.City ?? "";
+            string orgRegion = orgDetails?.Region ?? "";
+            string orgPostalCode = orgDetails?.PostalCode ?? "";
+            string orgCountry = orgDetails?.Country ?? "";
 
             string firstName = "";
             List<string> allEmails = new();
