@@ -1,4 +1,4 @@
-# Copyright Â© 2025 Marc Banyard
+# Copyright © 2025 Marc Banyard
 #
 # This file is part of XeroMailerWeb.
 #
@@ -23,7 +23,8 @@
 # This script builds the web application and provides testing instructions
 
 param(
-    [string]$Configuration = "Release"
+    [string]$Configuration = "Release",
+    [string]$OutputPath = "Deploy"
 )
 
 Write-Host "Building XeroMailer Web Application..." -ForegroundColor Green
@@ -33,7 +34,8 @@ Write-Host "Configuration: $Configuration" -ForegroundColor Cyan
 Write-Host "`nCleaning previous builds..." -ForegroundColor Yellow
 $cleanPaths = @(
     "XeroMailerWeb\bin",
-    "XeroMailerWeb\obj"
+    "XeroMailerWeb\obj",
+    $OutputPath
 )
 
 foreach ($path in $cleanPaths) {
@@ -60,13 +62,26 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host "`nBuild completed successfully!" -ForegroundColor Green
 
+# Create output directory if it doesn't exist
+if (-not (Test-Path $OutputPath)) {
+    Write-Host "Creating output directory: $OutputPath" -ForegroundColor Cyan
+    New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
+}
+
 # Publish for production
 Write-Host "`nPublishing for production..." -ForegroundColor Yellow
-dotnet publish "XeroMailerWeb\XeroMailerWeb.csproj" -c $Configuration -o "XeroMailerWeb\bin\publish"
+dotnet publish "XeroMailerWeb\XeroMailerWeb.csproj" --configuration $Configuration --output $OutputPath --no-build --self-contained false --verbosity normal
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Failed to publish XeroMailerWeb project" -ForegroundColor Red
     exit $LASTEXITCODE
+}
+
+# Remove PDB files
+$pdbFiles = Get-ChildItem $OutputPath -Recurse -Include "*.pdb" -ErrorAction SilentlyContinue
+if ($pdbFiles) {
+    $pdbFiles | Remove-Item -Force
+    Write-Host "Removed $($pdbFiles.Count) PDB files" -ForegroundColor Green
 }
 
 Write-Host "`nPublish completed successfully!" -ForegroundColor Green
