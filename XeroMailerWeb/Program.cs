@@ -61,12 +61,13 @@ builder.Services.AddSwaggerGen();
 
 // Add custom services
 builder.Services.AddScoped<EmailService>();
-builder.Services.AddScoped<XeroService>();
+builder.Services.AddSingleton<XeroService>();
 
 // Register WebhookQueueService as singleton with the queue file path
 builder.Services.AddSingleton<WebhookQueueService>(sp =>
     new WebhookQueueService(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "app_XeroWebhookQueue.json")));
-// Register WebhookProcessorService as hosted service
+
+// Register WebhookProcessorService as hosted service using factory pattern
 builder.Services.AddHostedService<WebhookProcessorService>(sp =>
     new WebhookProcessorService(
         sp.GetRequiredService<WebhookQueueService>(),
